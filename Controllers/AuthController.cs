@@ -68,7 +68,7 @@ namespace TasksApi.Controllers
         {
             var user = await _context.Users.Where(x => x.Email == request.Email).FirstOrDefaultAsync();
             /* If not found */
-            if (user.Email != request.Email)
+            if (user!.Email != request.Email)
             {
                 return BadRequest(new { message = "User not found", });
             }
@@ -81,7 +81,7 @@ namespace TasksApi.Controllers
             string token = CreateToken(user);
 
 
-            return Ok(new { accessToken = token, user });
+            return Ok(new { accessToken = token, user = new { id = user.Id, email = user.Email, username = user.Username } });
 
         }
 
@@ -96,7 +96,6 @@ namespace TasksApi.Controllers
             var jwtConfig = _config.GetSection("Jwt").Get<Jwt>();
             /* Extracting the key from config and encoding it */
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig!.Key));
-            Console.WriteLine("OTRA" + key);
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
             /* Create and write token */
             var token = new JwtSecurityToken(
