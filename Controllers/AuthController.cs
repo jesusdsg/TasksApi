@@ -96,6 +96,7 @@ namespace TasksApi.Controllers
             var jwtConfig = _config.GetSection("Jwt").Get<Jwt>();
             /* Extracting the key from config and encoding it */
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig!.Key));
+            Console.WriteLine("OTRA" + key);
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
             /* Create and write token */
             var token = new JwtSecurityToken(
