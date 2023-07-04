@@ -68,7 +68,7 @@ namespace TasksApi.Controllers
         {
             var user = await _context.Users.Where(x => x.Email == request.Email).FirstOrDefaultAsync();
             /* If not found */
-            if (user!.Email != request.Email)
+            if (user?.Email != request.Email)
             {
                 return BadRequest(new { message = "User not found", });
             }
@@ -79,14 +79,10 @@ namespace TasksApi.Controllers
             }
 
             string token = CreateToken(user);
-
-
-            return Ok(new { accessToken = token, user = new { id = user.Id, email = user.Email, username = user.Username } });
-
+            return Ok(new { accessToken = token, user });
         }
 
-
-        public string CreateToken(User user)
+        protected string CreateToken(User user)
         {
             List<Claim> claims = new()
             {

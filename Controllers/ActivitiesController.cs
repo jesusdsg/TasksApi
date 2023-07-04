@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TasksApi.Data;
@@ -23,7 +24,7 @@ namespace TasksApi.Controllers
         #region GET Methods
 
         /* Get list of books */
-        [HttpGet]
+        [HttpGet, Authorize]
         public async Task<ActionResult<IEnumerable<Activity>>> GetActivities()
         {
             return await _context.Activities.ToListAsync();
