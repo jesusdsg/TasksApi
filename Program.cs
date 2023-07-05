@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
+using TasksApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 //Recovery Connection string
@@ -15,6 +16,10 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 // Add services to the container.
 builder.Services.AddDbContext<DataContext>(option => option.UseNpgsql(connectionString));
+
+/* Getting Settings json */
+builder.Configuration.AddJsonFile("appsettings.json");
+var jwtConfig = builder.Configuration.GetSection("Jwt").Get<Jwt>();
 
 /* Register for patch */
 builder.Services.AddControllers().AddNewtonsoftJson();
@@ -33,19 +38,34 @@ builder.Services.AddSwaggerGen(options =>
     options.OperationFilter<SecurityRequirementsOperationFilter>();
 });
 //Configure the JWT feature
-builder.Services.AddAuthentication().AddJwtBearer();
+builder.Services.AddAuthentication(config =>
+{
+    config.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    config.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(config =>
+{
+    config.RequireHttpsMetadata = false;
+    config.SaveToken = true;
+    config.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig!.Key)),
+        ValidateIssuer = false,
+        ValidateAudience = false,
+    };
+});
 /* builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
-    };
+   options.TokenValidationParameters = new TokenValidationParameters
+   {
+       ValidateIssuer = true,
+       ValidateAudience = true,
+       ValidateLifetime = true,
+       ValidateIssuerSigningKey = true,
+       ValidIssuer = jwtConfig?.Issuer,
+       ValidAudience = jwtConfig?.Audience,
+       IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig!.Key))
+   };
 }); */
 
 builder.Services.AddDataProtection().UseCryptographicAlgorithms(

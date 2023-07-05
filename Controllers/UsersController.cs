@@ -39,7 +39,8 @@ namespace TasksApi.Controllers
 
 
         /* Update user */
-        [HttpPut("{id}"), Authorize]
+        [HttpPut("{id}")]
+        [Authorize]
         public async Task<ActionResult> UpdateUser(int id, User requestUser)
         {
             if (requestUser.Id != id)
