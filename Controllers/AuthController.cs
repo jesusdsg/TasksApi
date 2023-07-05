@@ -66,6 +66,14 @@ namespace TasksApi.Controllers
         [Route("signin")]
         public async Task<ActionResult<string>> SignIn(AuthDto request)
         {
+            if (request.Password.IsNullOrEmpty())
+            {
+                return BadRequest(new { message = "Password is missing" });
+            }
+            else if (request.Email.IsNullOrEmpty())
+            {
+                return BadRequest(new { message = "Email address is missing" });
+            }
             var user = await _context.Users.Where(x => x.Email == request.Email).FirstOrDefaultAsync();
             /* If not found */
             if (user?.Email != request.Email)

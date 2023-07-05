@@ -1,13 +1,9 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 using TasksApi.Data;
 using TasksApi.Models;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using Newtonsoft.Json.Linq;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TasksApi.Controllers
 {
@@ -28,17 +24,7 @@ namespace TasksApi.Controllers
             _config = config;
         }
 
-        /* Create User */
-        /* [HttpPost]
-        public async Task<ActionResult<User>> CreateUser(User user)
-        {
-            _context.Add(user);
-            await _context.SaveChangesAsync();
-            return new CreatedAtRouteResult("GetUser", new { id = user.Id }, user);
-        } */
-
-
-        /* Get Only one book */
+        /* Get Only one User */
         [HttpGet("{id}")]
         public async Task<ActionResult<User>> GetUser(int id)
         {
@@ -51,20 +37,61 @@ namespace TasksApi.Controllers
             return user;
         }
 
-        /* Update book */
-        [HttpPut("{id}")]
-        public async Task<ActionResult> UpdateUser(int id, User user)
+
+        /* Update user */
+        [HttpPut("{id}"), Authorize]
+        public async Task<ActionResult> UpdateUser(int id, User requestUser)
         {
-            var exists = await _context.Users.Where(x => x.Id == id).FirstOrDefaultAsync();
-            if (id != exists?.Id)
+            if (requestUser.Id != id)
             {
-                return BadRequest(new { message = "User not found in Database", });
+                Console.WriteLine("Aqui es " + requestUser.Id + " Mas " + id);
+                return BadRequest();
             }
             /* Update to indicate is being updated */
-            //_context.Users.Update(user);
-            _context.Entry(user).State = EntityState.Modified;
-            var result = await _context.SaveChangesAsync();
-            return Ok(new { data = result });
+
+            string encryptedPassword = BCrypt.Net.BCrypt.HashPassword(requestUser.Password);
+            requestUser.Password = encryptedPassword;
+            _context.Entry(requestUser).State = EntityState.Modified;
+            try
+            {
+                await _context.SaveChangesAsync();
+                return Ok(new { data = requestUser, message = "Updated sucessfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.InnerException!.Data);
+            }
+        }
+
+
+        [HttpPatch("{id}")]
+        public async Task<ActionResult> UpdatePatchUser(int id, [FromBody] JsonPatchDocument<User> userPatch)
+        {
+            if (userPatch != null)
+            {
+                var user = await _context.Users.FindAsync(id);
+                if (user != null)
+                {
+                    try
+                    {
+                        userPatch.ApplyTo(user, ModelState);
+                        await _context.SaveChangesAsync();
+                        if (!ModelState.IsValid)
+                        {
+                            return BadRequest(ModelState);
+                        }
+
+                        return Ok(new { message = "User Sucessfully updated" });
+                    }
+                    catch (Exception ex)
+                    {
+                        return BadRequest(ex.InnerException!.Data);
+                    }
+                }
+                return NotFound(new { message = "User not found in Database", });
+            }
+            return BadRequest(new { message = "Something wen't wrong", });
+
         }
 
 
